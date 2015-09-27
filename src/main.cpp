@@ -195,8 +195,10 @@ void UpdatePopulation(){
     for(int i = 0; i < sizePobB; i++){
         pobA[i]->Delete();
         delete pobA[i];
-        pobA[i] = new Chromosome();
-        pobB[i]->Clone(pobA[i]);
+        //pobA[i] = new Chromosome();
+        //pobB[i]->Clone(pobA[i]);
+        pobA[i] = pobB[i];
+        pobB[i] = NULL;
     }
 
     sizePobA = sizePobB;
@@ -287,10 +289,14 @@ void InitGA(){
 
 void CleanUp(){
     for(int i = 0; i < sizePobA; i++){
-        pobA[i]->Delete();
-        delete pobA[i];
-        pobB[i]->Delete();
-        delete pobB[i];
+        if(pobA[i] != NULL){
+            pobA[i]->Delete();
+            delete pobA[i];
+        }
+        if(pobB[i] != NULL){
+            pobB[i]->Delete();
+            delete pobB[i];
+        }
     }
 }
 
