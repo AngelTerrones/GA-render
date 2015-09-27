@@ -30,22 +30,6 @@ int Chromosome::Length(){
     return length;
 }
 
-// Chromosome *Chromosome::Clone(){
-//     if(length == 0)
-//         return NULL;
-
-//     Chromosome *ptr = new Chromosome();
-//     ptr->Create(length);
-//     ptr->fitness = fitness;
-
-//     // copy data
-//     for(int i = 0; i < length; i++){
-//         ptr->listPolygon[i] = listPolygon[i];
-//     }
-
-//     return ptr;
-// }
-
 void Chromosome::Clone(Chromosome *copy){
     if(length == 0)
         return;

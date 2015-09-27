@@ -16,10 +16,10 @@ int max_generation = -1;
 QImage sourceImage;
 int imgW = -1;
 int imgH = -1;
-Chromosome *pobA[N_POPULATION];
-Chromosome *pobB[N_POPULATION];
-int sizePobA = -1;
-int sizePobB = -1;
+Chromosome *populationA[N_POPULATION];
+Chromosome *populationB[N_POPULATION];
+int sizePopulationA = -1;
+int sizePopulationB = -1;
 
 // functions
 QImage DrawImage(Chromosome *dna){
@@ -28,12 +28,14 @@ QImage DrawImage(Chromosome *dna){
     painter.setPen(Qt::NoPen);
     painter.setRenderHint(QPainter::Antialiasing);
 
+    // black background
     painter.setBrush(QBrush(QColor(0, 0, 0, 255)));
     QPolygon polyclean;
     int pointsclean[] = {0, 0, 0, imgH, imgW, imgH, imgW, 0};
     polyclean.setPoints(4, pointsclean);
     painter.drawConvexPolygon(polyclean);
 
+    // Draw all the polygons
     Polygon *poly = dna->DNA();
     for (int n = 0; n < N_POLYGONS; n++) {
         QColor color(poly[n].Red(),
@@ -70,12 +72,14 @@ void DrawSVG(Chromosome *dna, const char *svgName){
     painter.setPen(Qt::NoPen);
     painter.setRenderHint(QPainter::Antialiasing);
 
+    // Black background
     painter.setBrush(QBrush(QColor(0, 0, 0, 255)));
     QPolygon polyclean;
     int pointsclean[] = {0, 0, 0, imgH, imgW, imgH, imgW, 0};
     polyclean.setPoints(4, pointsclean);
     painter.drawConvexPolygon(polyclean);
 
+    // Draw all the polygons
     Polygon *poly = dna->DNA();
     for (int n = 0; n < N_POLYGONS; n++) {
         QColor color(poly[n].Red(),
@@ -107,6 +111,7 @@ unsigned long long Distance(Chromosome *dna){
     const unsigned char *original = sourceImage.bits();
     const unsigned char *render = imageRender.bits();
 
+    // get the distance
     for (int i = 0; i < nBytesImage; i++) {
         int temp = original[i] - render[i];
         distance += temp*temp;
@@ -121,88 +126,65 @@ void Crossover(Chromosome *a, Chromosome *b){
     if(length <= 0)
         return;
 
-    // Chromosome cA, cB;
-    // cA.Create(length);
-    // cB.Create(length);
-
     for(int i = 0; i < length; i++){
+        // switch current polygon. 50% prob.
         if(rand() % 2){
             Polygon tmp = a->DNA()[i];
             a->DNA()[i] = b->DNA()[i];
             b->DNA()[i] = tmp;
         }
     }
-
-    // for(int i = 0; i < length; i++){
-    //     if(rand() % 2){
-    //         cA.DNA()[i] = a->DNA()[i];
-    //         cB.DNA()[i] = b->DNA()[i];
-    //     }else{
-    //         cA.DNA()[i] = b->DNA()[i];
-    //         cB.DNA()[i] = a->DNA()[i];
-    //     }
-    // }
-
-    // for(int i = 0; i < length; i++){
-    //     a->DNA()[i] = cA.DNA()[i];
-    //     b->DNA()[i] = cB.DNA()[i];
-    // }
-
-    // cA.Delete();
-    // cB.Delete();
 }
 
 Chromosome *SelectBest(){
-    if(sizePobA == 0)
+    if(sizePopulationA == 0)
         return NULL;
 
     unsigned long long min = ~0x00;
     int index = 0;
 
-    for(int i = 0; i < sizePobA; i++){
-        if(pobA[i]->Fitness() < min){
-            min = pobA[i]->Fitness();
+    for(int i = 0; i < sizePopulationA; i++){
+        if(populationA[i]->Fitness() < min){
+            min = populationA[i]->Fitness();
             index = i;
         }
     }
-    return pobA[index];
+    return populationA[index];
 }
 
 Chromosome *SelectTournament(){
-    int i = rand() % sizePobA;
-    int j = rand() % sizePobA;
+    int i = rand() % sizePopulationA;
+    int j = rand() % sizePopulationA;
 
-    if(pobA[i]->Fitness() < pobA[j]->Fitness())
-        return pobA[i];
+    if(populationA[i]->Fitness() < populationA[j]->Fitness())
+        return populationA[i];
     else
-        return pobA[j];
+        return populationA[j];
 }
 
 void InsertPobB(Chromosome *dna){
-    if(sizePobA <= sizePobB)
+    if(sizePopulationA <= sizePopulationB)
         return;
 
-    if(pobB[sizePobB] == NULL){
-        pobB[sizePobB] = new Chromosome();
+    if(populationB[sizePopulationB] == NULL){
+        populationB[sizePopulationB] = new Chromosome();
     }
 
-    dna->Clone(pobB[sizePobB]);
+    dna->Clone(populationB[sizePopulationB]);
 
-    sizePobB++;
+    sizePopulationB++;
 }
 
 void UpdatePopulation(){
-    for(int i = 0; i < sizePobB; i++){
-        pobA[i]->Delete();
-        delete pobA[i];
-        //pobA[i] = new Chromosome();
-        //pobB[i]->Clone(pobA[i]);
-        pobA[i] = pobB[i];
-        pobB[i] = NULL;
+    for(int i = 0; i < sizePopulationB; i++){
+        populationA[i]->Delete();
+        delete populationA[i];
+        populationA[i] = populationB[i];
+        populationB[i] = NULL;
     }
 
-    sizePobA = sizePobB;
-    sizePobB = 0;
+    sizePopulationA = sizePopulationB;
+    sizePopulationB = 0;
 }
 
 void GAStep(){
@@ -211,11 +193,12 @@ void GAStep(){
     Chromosome clonB;
     Chromosome *ap = NULL;
 
+    // Elitism
     elite->Clone(&clonA);
     InsertPobB(&clonA);
 
     // harem
-    int fraction = int(HAREM * sizePobA);
+    int fraction = int(HAREM * sizePopulationA);
     for(int i = 0; i < fraction; i += 2){
         elite->Clone(&clonA);
         SelectTournament()->Clone(&clonB);
@@ -230,7 +213,8 @@ void GAStep(){
         InsertPobB(&clonB);
     }
 
-    while((sizePobA - sizePobB) > 0){
+    // Fill
+    while((sizePopulationA - sizePopulationB) > 0){
         ap = SelectTournament();
         ap->Clone(&clonA);
         ap = SelectTournament();
@@ -270,32 +254,32 @@ void RunGA(){
 }
 
 void InitGA(){
-    sizePobA = sizePobB = 0;
+    sizePopulationA = sizePopulationB = 0;
 
     for(int i = 0; i < N_POPULATION; i++){
         // population A
-        pobA[i] = new Chromosome();
-        pobA[i]->Create(N_POLYGONS);
+        populationA[i] = new Chromosome();
+        populationA[i]->Create(N_POLYGONS);
         for(int j = 0; j < N_POLYGONS; j++){
-            pobA[i]->DNA()[j].Init(imgW, imgH);
+            populationA[i]->DNA()[j].Init(imgW, imgH);
         }
-        pobA[i]->Fitness() = Distance(pobA[i]);
-        sizePobA++;
+        populationA[i]->Fitness() = Distance(populationA[i]);
+        sizePopulationA++;
 
         // population B
-        pobB[i] = NULL;
+        populationB[i] = NULL;
     }
 }
 
 void CleanUp(){
-    for(int i = 0; i < sizePobA; i++){
-        if(pobA[i] != NULL){
-            pobA[i]->Delete();
-            delete pobA[i];
+    for(int i = 0; i < sizePopulationA; i++){
+        if(populationA[i] != NULL){
+            populationA[i]->Delete();
+            delete populationA[i];
         }
-        if(pobB[i] != NULL){
-            pobB[i]->Delete();
-            delete pobB[i];
+        if(populationB[i] != NULL){
+            populationB[i]->Delete();
+            delete populationB[i];
         }
     }
 }
