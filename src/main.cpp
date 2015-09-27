@@ -32,7 +32,7 @@ QImage DrawImage(Chromosome *dna){
     QPolygon polyclean;
     int pointsclean[] = {0, 0, 0, imgH, imgW, imgH, imgW, 0};
     polyclean.setPoints(4, pointsclean);
-    painter.drawPolygon(polyclean);
+    painter.drawConvexPolygon(polyclean);
 
     Polygon *poly = dna->DNA();
     for (int n = 0; n < N_POLYGONS; n++) {
@@ -60,10 +60,11 @@ QImage DrawImage(Chromosome *dna){
     return image;
 }
 
-void DrawSVG(double **member, const char *svgName){
+void DrawSVG(Chromosome *dna, const char *svgName){
     QSvgGenerator svgGen;
     svgGen.setFileName(QString(svgName));
     svgGen.setSize(QSize(imgW, imgH));
+    svgGen.setViewBox(QRect(0, 0, imgW, imgH));
 
     QPainter painter(&svgGen);
     painter.setPen(Qt::NoPen);
@@ -73,13 +74,30 @@ void DrawSVG(double **member, const char *svgName){
     QPolygon polyclean;
     int pointsclean[] = {0, 0, 0, imgH, imgW, imgH, imgW, 0};
     polyclean.setPoints(4, pointsclean);
-    painter.drawPolygon(polyclean);
+    painter.drawConvexPolygon(polyclean);
 
-
+    Polygon *poly = dna->DNA();
     for (int n = 0; n < N_POLYGONS; n++) {
+        QColor color(poly[n].Red(),
+                     poly[n].Green(),
+                     poly[n].Blue(),
+                     poly[n].Alpha());
+        painter.setBrush(QBrush(color));
+
+        int size = poly[n].NPoints();
+        int *listPoints = new int[2*size];
+
+        for(int i = 0; i < size; i++){
+            listPoints[2*i] = poly[n].Vertex()[i].x();
+            listPoints[2*i + 1] = poly[n].Vertex()[i].y();
+        }
+
+        QPolygon qPoly;
+        qPoly.setPoints(size, listPoints);
+        painter.drawConvexPolygon(qPoly);
+        delete [] listPoints;
     }
     painter.end();
-
 }
 
 unsigned long long Distance(Chromosome *dna){
@@ -246,6 +264,7 @@ void RunGA(){
         }
         generations++;
     }
+    DrawSVG(SelectBest(), "Final.svg");
 }
 
 void InitGA(){
