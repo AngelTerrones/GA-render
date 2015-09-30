@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <time.h>
 #include <unistd.h>
 #include <iostream>
 #include <QDir>
@@ -286,7 +287,7 @@ void CleanUp(){
 
 int main(int argc, char *argv[]){
     int option;
-
+    srand(time(NULL));
     while((option = getopt(argc, argv, "g:")) != -1){
         switch (option) {
             // get the generation limit
